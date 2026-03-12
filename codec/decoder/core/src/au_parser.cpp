@@ -1375,6 +1375,12 @@ int32_t ParsePps (PWelsDecoderContext pCtx, PPps pPpsList, PBitStringAux pBsAux,
       for (iTmp = 0; iTmp < pPps->uiNumSliceGroups; iTmp++) {
         WELS_READ_VERIFY (BsGetUe (pBsAux, &uiCode)); //run_length_minus1[ iGroup ]
         pPps->uiRunLength[iTmp] = RUN_LENGTH_OFFSET + uiCode;
+        // Guard against signed-integer overflow: uiRunLength is stored as uint32_t but
+        // consumed as int32_t in FmoGenerateMbAllocMapType0().  A value > INT32_MAX would
+        // wrap to a negative run length and cause a heap out-of-bounds write.
+        if (pPps->uiRunLength[iTmp] > (uint32_t) 0x7FFFFFFF) {
+          return GENERATE_ERROR_NO (ERR_LEVEL_PARAM_SETS, ERR_INFO_INVALID_SLICEGROUP);
+        }
       }
       break;
     default:

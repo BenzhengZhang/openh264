@@ -67,6 +67,11 @@ static inline int32_t FmoGenerateMbAllocMapType0 (PFmo pFmo, PPps pPps) {
     uint8_t uiGroup = 0;
     do {
       const int32_t kiRunIdx = pPps->uiRunLength[uiGroup];
+      // Defense-in-depth: reject a non-positive run length that would drive
+      // the macroblock index below zero and cause an out-of-bounds write.
+      if (kiRunIdx <= 0) {
+        return ERR_INFO_INVALID_PARAM;
+      }
       int32_t j = 0;
       do {
         pFmo->pMbAllocMap[i + j] = uiGroup;
