@@ -662,7 +662,10 @@ int32_t ExpandBsBuffer (PWelsDecoderContext pCtx, const int kiSrcLen) {
   }
 
   //Calculate and set the bs start and end position
-  for (uint32_t i = 0; i <= pCtx->pAccessUnitList->uiActualUnitsNum; i++) {
+  // Use uiAvailUnitsNum (all queued NALs) with strict '<' to avoid:
+  //   1. Skipping NALs beyond uiActualUnitsNum that still point into the old buffer (UAF).
+  //   2. The off-by-one '<=' that would access one element past the list end (OOB read).
+  for (uint32_t i = 0; i < pCtx->pAccessUnitList->uiAvailUnitsNum; i++) {
     PBitStringAux pSliceBitsRead = &pCtx->pAccessUnitList->pNalUnitsList[i]->sNalData.sVclNal.sSliceBitsRead;
     pSliceBitsRead->pStartBuf = pSliceBitsRead->pStartBuf - pCtx->sRawData.pHead + pNewBsBuff;
     pSliceBitsRead->pEndBuf   = pSliceBitsRead->pEndBuf   - pCtx->sRawData.pHead + pNewBsBuff;
